@@ -30,6 +30,14 @@ def test_unbroadcast(unbroadcast):
     out = unbroadcast(large, small)
     assert out.shape == small.shape
     assert (out == 4.0).all(), "Each element in the small array appeared 4 times in the large array."
+
+    # This is to make sure that the implementation of unbroadcast doesn't accidentally forget to use the index of where axes with 1 appear rather than the value
+    # (because for the previous test cases, it just so happens that the index of the axis which is equal to 1 also happens to be 1)
+    small = np.ones((1, 1, 3))
+    large = np.broadcast_to(small, (2, 4, 3))
+    out = unbroadcast(large, small)
+    assert out.shape == small.shape
+    assert (out == 8.0).all(), f"We should have gotten a 1x1x3 array full of 8s after unbroadcasting from a 2x4x3 array of 1s but instead we got {small}"
     print("All tests in `test_unbroadcast` passed!")
 
 def test_multiply_back(multiply_back0, multiply_back1):
@@ -341,7 +349,10 @@ def test_expand_negative_length(Tensor):
     print("All tests in `test_expand_negative_length` passed!")
 
 def test_sum_keepdim_false(Tensor):
-    a = Tensor(np.array([[0.0, 1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0, 9.0]]), requires_grad=True)
+    a = Tensor(np.array([
+        [0.0, 1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0, 9.0]
+    ]), requires_grad=True)
     b = a.sum(0)
     c = b.sum(0)
     c.backward(np.array(2))
@@ -350,8 +361,28 @@ def test_sum_keepdim_false(Tensor):
     assert (a.grad.array == 2).all()
     print("All tests in `test_sum_keepdim_false` passed!")
 
+def test_sum_nonscalar_grad_out(Tensor):
+    a = Tensor(np.array([
+        [0.0, 1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0, 9.0]
+    ]), requires_grad=True)
+    b = a.sum(1)
+    try:
+        b.backward(np.array([2, 2]))
+    except:
+        raise Exception("Encountered error when running `backward` in the test for nonscalar grad_out. See hint!")
+    assert a.grad is not None
+    assert a.grad.shape == a.shape
+    assert (a.grad.array == 2).all()
+    print(a.grad.shape)
+    print(a.shape)
+    print("All tests in `test_sum_keepdim_false_sum_not_zeroth_dim` passed!")
+
 def test_sum_keepdim_true(Tensor):
-    a = Tensor(np.array([[0.0, 1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0, 9.0]]), requires_grad=True)
+    a = Tensor(np.array([
+        [0.0, 1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0, 9.0]
+    ]), requires_grad=True)
     b = a.sum(1, keepdim=True)
     c = a.sum(0, keepdim=True)
     np.testing.assert_almost_equal(c.array, np.array([[5.0, 7.0, 9.0, 11.0, 13.0]]))
@@ -362,7 +393,10 @@ def test_sum_keepdim_true(Tensor):
     print("All tests in `test_sum_keepdim_true` passed!")
 
 def test_sum_dim_none(Tensor):
-    a = Tensor(np.array([[0.0, 1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0, 9.0]]), requires_grad=True)
+    a = Tensor(np.array([
+        [0.0, 1.0, 2.0, 3.0, 4.0],
+        [5.0, 6.0, 7.0, 8.0, 9.0]
+    ]), requires_grad=True)
     b = a.sum()
     b.backward(np.array(4))
     assert a.grad is not None

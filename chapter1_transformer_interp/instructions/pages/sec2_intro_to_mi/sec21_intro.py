@@ -150,7 +150,7 @@ It's important to distinguish between parameters and activations in the model.
 
 * **Parameters** are the weights and biases that are learned during training.
     * These don't change when the model input changes.
-    * They can be accessed direction fromm the model, e.g. `model.W_E` for the embedding matrix.
+    * They can be accessed directly from the model, e.g. `model.W_E` for the embedding matrix.
 * **Activations** are temporary numbers calculated during a forward pass, that are functions of the input.
     * We can think of these values as only existing for the duration of a single forward pass, and disappearing afterwards.
     * We can use hooks to access these values during a forward pass (more on hooks later), but it doesn't make sense to talk about a model's activations outside the context of some particular input.
@@ -388,31 +388,6 @@ We will use the function `cv.attention.attention_patterns`, which takes the foll
 * `attention_head_names`: Optional list of names for the heads.
 
 There are also other circuitsvis functions, e.g. `cv.attention.attention_pattern` (for just a single head) or `cv.attention.attention_heads` (which has the same syntax and but presents the information in a different form).
-
-<details>
-<summary>Help - my <code>attention_heads</code> plots are behaving weirdly (e.g. they continually shrink after I plot them).</summary>
-
-This seems to be a bug in `circuitsvis` - on VSCode, the attention head plots continually shrink in size.
-
-Until this is fixed, one way to get around it is to open the plots in your browser. You can do this inline with the `webbrowser` library:
-
-```python
-attn_heads = cv.attention.attention_heads(
-    tokens=gpt2_str_tokens, 
-    attention=attention_pattern,
-    attention_head_names=[f"L0H{i}" for i in range(12)],
-)
-
-path = "attn_heads.html"
-
-with open(path, "w") as f:
-    f.write(str(attn_heads))
-
-webbrowser.open(path)
-```
-
-To check exactly where this is getting saved, you can print your current working directory with `os.getcwd()`.
-</details>
 
 This visualization is interactive! Try hovering over a token or head, and click to lock. The grid on the top left and for each head is the attention pattern as a destination position by source position grid. It's lower triangular because GPT-2 has **causal attention**, attention can only look backwards, so information can only move forwards in the network.
 
